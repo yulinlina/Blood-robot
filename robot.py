@@ -1,4 +1,8 @@
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+
 class Week:
     def __init__(self,cur_robot,skilled=0):
         self.skilled=skilled
@@ -18,6 +22,23 @@ def initial_week():
             li.append(Week(data.iloc[i//8,i%7]))
     return li
 
+def func(x,a,b):
+    return a*x+b
+
+def predict(res):
+    x =range(0,n)
+    popt, pcov = curve_fit(func, x, res)
+    a,b = popt  # popt里面是拟合系数，读者可以自己help其用法
+    y_vals = func(x, a, b)
+
+    plot1 = plt.plot(x, res,y_vals, '-', label='original values')
+
+    plt.show()
+
+    x_pre=range(105,112)
+    y_pre=[a*x+b for x in x_pre]
+    print(y_pre)
+
 def Buy_op(li):
     res = []
     print("the result of operator in question 3")
@@ -27,6 +48,9 @@ def Buy_op(li):
         print(week.buy_op, end=" ")
         res.append(week.buy_op)
 
+    return res
+
+def question4(res):
     last_buy_week=3
     for index,num in enumerate(res):
 
@@ -84,13 +108,15 @@ def Buy_op(li):
     print()
     print("-------------------------------------")
 
-    return res
 
-def main(loss =False):
+def main(loss =False,pred=True):
     li = initial_week()
 
-    # for week in li:
-    #     print(week.cur_robot)
+    if pred:
+        robot =[]
+        for week in li:
+            robot.append(week.cur_robot)
+        predict((robot))
 
     for index,week in enumerate(li):
 
@@ -118,10 +144,15 @@ def main(loss =False):
         """带有损失"""
         if loss:
             week.cur_robot=int(0.9*week.cur_robot)
-        Buy_op(li)
+    res =Buy_op(li)
+    question4(res)
+
+
+
+
 
 
 
 
 if __name__ =="__main__":
-    main(loss=True)
+    main(loss=True,pred=True)
