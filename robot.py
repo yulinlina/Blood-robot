@@ -28,7 +28,7 @@ def func(x,a,b):
 def predict(res):
     x =range(0,n)
     popt, pcov = curve_fit(func, x, res)
-    a,b = popt  # popt里面是拟合系数，读者可以自己help其用法
+    a,b = popt  # popt里面是拟合系数
     y_vals = func(x, a, b)
 
     plot1 = plt.plot(x, res,y_vals, '-', label='original values')
