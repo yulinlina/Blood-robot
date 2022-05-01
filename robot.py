@@ -20,8 +20,10 @@ def initial_week():
 
 def Buy_op(li):
     res = []
+    print("the result of operator in question 3")
     for index, week in enumerate(li):
         if index % 8 == 0: print()
+
         print(week.buy_op, end=" ")
         res.append(week.buy_op)
 
@@ -72,9 +74,15 @@ def Buy_op(li):
                     res[last_buy_week] += num
                 else:
                     last_buy_week = index
+
+    print()
+    print("-------------------------------------")
+    print("the result of operator in question 4")
     for index, num in enumerate(res):
         if index % 8 == 0: print()
         print(num, end=" ")
+    print()
+    print("-------------------------------------")
 
     return res
 
@@ -109,7 +117,7 @@ def main(loss =False):
 
         """带有损失"""
         if loss:
-            week.cur_robot=int(0.8*week.cur_robot)
+            week.cur_robot=int(0.9*week.cur_robot)
         Buy_op(li)
 
 
