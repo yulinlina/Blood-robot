@@ -4,11 +4,12 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 class Week:
-    def __init__(self,cur_robot,skilled=0):
+    def __init__(self,cur_robot,skilled=0,boat=0):
         self.skilled=skilled
         self.cur_robot=cur_robot
         self.buy_op=0
         self.fresh_op=0
+        self.boat = boat
 n =104
 
 def initial_week():
@@ -17,7 +18,7 @@ def initial_week():
     print(data)
     for i in range(n):
         if i==0:
-            li.append(Week(data.iloc[i//8,i%7],skilled=50))
+            li.append(Week(data.iloc[i//8,i%7],skilled=50,boat=13))
         else:
             li.append(Week(data.iloc[i//8,i%7]))
     return li
@@ -28,7 +29,7 @@ def func(x,a,b):
 def predict(res):
     x =range(0,n)
     popt, pcov = curve_fit(func, x, res)
-    a,b = popt  # popt里面是拟合系数
+    a,b = popt  # popt里面是拟合系数，读者可以自己help其用法
     y_vals = func(x, a, b)
 
     plot1 = plt.plot(x, res,y_vals, '-', label='original values')
@@ -50,11 +51,14 @@ def Buy_op(li):
 
     return res
 
-def question4(res):
+def question4(res,li):
     last_buy_week=3
+    maintain_op = []
+
     for index,num in enumerate(res):
 
         if not num or index==0:continue
+
 
         if res[last_buy_week]>=40:
             if (index-last_buy_week)*5<=20:
@@ -99,6 +103,25 @@ def question4(res):
                 else:
                     last_buy_week = index
 
+    """保养的操作手 = 上一周使+(可用-这一周需要使用-这一周训练)"""
+
+    for index,week in enumerate(li):
+        loss =0.9
+        if index<n-1:
+            week.buy_op=res[index]
+            cur_skill = week.skilled
+            cur_need_robot = week.cur_robot
+
+            if index >= 1:
+                li[index + 1].skilled = cur_skill - cur_need_robot * 4 + week.buy_op + li[index - 1].cur_robot * 4
+                maintain_op.append(
+                li[index - 1].cur_robot * 4 + cur_skill - cur_need_robot * 4 - (week.buy_op // 10 + 1))
+            else:
+                li[index + 1].skilled = cur_skill - cur_need_robot * 4 + week.buy_op
+                maintain_op.append(cur_skill - cur_need_robot * 4 - (week.buy_op // 10 + 1))
+        if loss:
+            week.cur_robot = int(loss * week.cur_robot)
+
     print()
     print("-------------------------------------")
     print("the result of operator in question 4")
@@ -108,8 +131,78 @@ def question4(res):
     print()
     print("-------------------------------------")
 
+    """保养的操作手"""
+    print("每周保养的操作手")
+    for index, num in enumerate(maintain_op):
+        if index % 8 == 0: print()
+        print(num, end=" ")
 
-def main(loss =False,pred=True):
+
+
+def question2And3(li,loss =0.8):
+    maintain_op=[]
+    boat =[]
+
+    for index, week in enumerate(li):
+
+        cur_need_robot = week.cur_robot
+        cur_skill = week.skilled
+        # print("cur_skilled ：", cur_skill)
+
+        """当不是最后一周此时还要买"""
+        if index < n - 1:
+
+            """下一周可以使用的操作手 为当前买的和这一周保养的"""
+            if index >= 1:
+                week.buy_op = max(
+                    4 * (li[index + 1].cur_robot + cur_need_robot) - week.skilled - 4 * li[index - 1].cur_robot, 0)
+                li[index + 1].skilled = cur_skill - cur_need_robot * 4 + week.buy_op + li[index - 1].cur_robot * 4
+                # 保养的操作手 = 上一周使用，这一周没有使用
+                maintain_op.append(li[index-1].cur_robot*4+cur_skill - cur_need_robot * 4-(week.buy_op//10+1))
+
+                """购买容器艇 ,容器艇可以一直用"""
+                li[index].boat=li[index-1].boat
+                if  li[index].boat<li[index].cur_robot:
+                    gap = li[index].cur_robot-li[index].boat
+                    boat.append(gap)
+                    li[index].boat+= gap
+                else:
+                    boat.append(0)
+
+            else:
+                week.buy_op = max(4 * (li[index + 1].cur_robot + cur_need_robot) - week.skilled, 0)
+                li[index + 1].skilled = cur_skill - cur_need_robot * 4 + week.buy_op
+                maintain_op.append(cur_skill - cur_need_robot * 4-(week.buy_op//10+1))
+
+            """判断训练是否足够"""
+            if index >= 1 and li[index - 1].cur_robot * 4 < week.buy_op // 10 + 1:
+                print(f"week {index} is not enough for training robot")
+
+
+
+        """带有损失"""
+        if loss:
+            week.cur_robot = int(loss * week.cur_robot)
+    """保养的操作手"""
+    print("每周保养的操作手")
+    for index, num in enumerate(maintain_op):
+        if index % 8 == 0: print()
+        print(num, end=" ")
+
+    print()
+    print("每周购买的容器")
+    for index, num in enumerate(boat):
+        if index % 8 == 0: print()
+        print(num, end=" ")
+
+    print()
+    res = Buy_op(li)
+    return res,li
+
+
+
+
+def main(pred=False):
     li = initial_week()
 
     if pred:
@@ -118,34 +211,9 @@ def main(loss =False,pred=True):
             robot.append(week.cur_robot)
         predict((robot))
 
-    for index,week in enumerate(li):
+    res,li = question2And3(li,loss=0.9)
 
-
-        cur_need_robot = week.cur_robot
-        cur_skill = week.skilled
-        print("cur_skilled ：",cur_skill)
-
-        """当不是最后一周此时还要买"""
-        if index<n-1:
-
-
-            """下一周可以使用的操作手 为当前买的和这一周保养的"""
-            if index>=1:
-                week.buy_op = max(4 * (li[index + 1].cur_robot + cur_need_robot) - week.skilled-4*li[index-1].cur_robot, 0)
-                li[index + 1].skilled = cur_skill - cur_need_robot * 4 + week.buy_op + li[index - 1].cur_robot * 4
-            else:
-                week.buy_op = max(4 * (li[index + 1].cur_robot + cur_need_robot) - week.skilled, 0)
-                li[index + 1].skilled = cur_skill - cur_need_robot * 4 + week.buy_op
-
-            """判断训练是否足够"""
-            if index>=1 and li[index-1].cur_robot*4<week.buy_op // 10 + 1:
-                print(f"week {index} is not enough for training robot")
-
-        """带有损失"""
-        if loss:
-            week.cur_robot=int(0.9*week.cur_robot)
-    res =Buy_op(li)
-    question4(res)
+    question4(res,initial_week())
 
 
 
@@ -155,4 +223,4 @@ def main(loss =False,pred=True):
 
 
 if __name__ =="__main__":
-    main(loss=True,pred=True)
+    main()
